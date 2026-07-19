@@ -2,9 +2,9 @@ name: Daily Horizon Summary
 
 on:
   schedule:
-    # GitHub scheduled workflows use UTC. 20:00 UTC is 04:00 Asia/Shanghai;
-    # this intentionally runs early to offset the observed schedule delay.
-    - cron: '0 23 * * *'
+    # Run at 13:00 UTC = 9:00 AM EST (US Eastern)
+    # Yihan gets the briefing when starting the day
+    - cron: '3 13 * * *'
   workflow_dispatch:      # Allow manual trigger
 
 jobs:
@@ -43,6 +43,7 @@ jobs:
           LWN_KEY: ${{ secrets.LWN_KEY }}
           DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
           HORIZON_WEBHOOK_URL: ${{ secrets.HORIZON_WEBHOOK_URL }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
         run: uv run horizon --hours 24
 
       - name: Set current date as environment variable
