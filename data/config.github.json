@@ -223,7 +223,7 @@
     "enabled": true,
     "url_env": "HORIZON_WEBHOOK_URL",
     "delivery": "summary_and_items",
-    "overview_position": "last",
+    "overview_position": "first",
     "platform": "generic",
     "layout": "markdown",
     "fallback_layout": "markdown",
