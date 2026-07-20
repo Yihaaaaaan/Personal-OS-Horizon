@@ -75,6 +75,11 @@ def _deduplication_url_key(url: str) -> tuple[str, str, str, str, Optional[int],
     )
 
 
+def _deduplication_url_key_str(url: str) -> str:
+    """Return a string version of the URL dedup key for persistent storage."""
+    return str(_deduplication_url_key(url))
+
+
 @dataclass
 class BalancedDigestResult:
     """Items and selection statistics from balanced digest filtering."""
@@ -224,6 +229,24 @@ class HorizonOrchestrator:
                     f"→ {len(merged_items)} unique items\n"
                 )
 
+            # 3.5 Cross-day dedup: remove items already sent in previous runs
+            sent_url_keys = self.storage.load_sent_history()
+            if sent_url_keys:
+                before = len(merged_items)
+                merged_items = [
+                    item for item in merged_items
+                    if _deduplication_url_key_str(str(item.url)) not in sent_url_keys
+                ]
+                removed = before - len(merged_items)
+                if removed:
+                    self.console.print(
+                        f"📋 Removed {removed} previously sent items → {len(merged_items)} remaining\n"
+                    )
+
+            if not merged_items:
+                self.console.print("[yellow]All items were previously sent. Nothing new to process.[/yellow]")
+                return
+
             # 4. Analyze with AI
             analyzed_items = await self._analyze_content(merged_items)
             self.console.print(f"🤖 Analyzed {len(analyzed_items)} items with AI\n")
@@ -315,6 +338,18 @@ class HorizonOrchestrator:
                         lang=lang,
                         summarizer=summarizer,
                     )
+
+            # Save sent items to history for cross-day dedup
+            history_entries = [
+                {
+                    "url_key": _deduplication_url_key_str(str(item.url)),
+                    "title": item.title,
+                    "date": today,
+                }
+                for item in important_items
+            ]
+            self.storage.save_sent_history(history_entries)
+            self.console.print(f"📋 Saved {len(history_entries)} items to sent history\n")
 
             self.console.print("[bold green]✅ Horizon completed successfully![/bold green]")
             usage = get_usage_snapshot()

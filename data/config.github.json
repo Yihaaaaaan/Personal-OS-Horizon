@@ -96,6 +96,18 @@
         "url": "https://magazine.sebastianraschka.com/feed",
         "enabled": true,
         "category": "ai-research"
+      },
+      {
+        "name": "TechCrunch Startups",
+        "url": "https://techcrunch.com/category/startups/feed/",
+        "enabled": true,
+        "category": "startups"
+      },
+      {
+        "name": "Crunchbase News",
+        "url": "https://news.crunchbase.com/feed/",
+        "enabled": true,
+        "category": "startups"
       }
     ],
     "reddit": {
@@ -163,7 +175,7 @@
     },
     "google_news": {
       "enabled": true,
-      "query": "AI product launch OR AI startup funding OR AI tool release OR AI hackathon OR AI conference 2026",
+      "query": "AI startup funding OR AI company funding round OR AI venture capital OR AI product launch OR AI tool release OR AI conference 2026",
       "language": "en",
       "country": "US",
       "max_results": 20,
@@ -209,6 +221,10 @@
       },
       "AI Events": {
         "categories": ["ai-events"],
+        "limit": 5
+      },
+      "Startups & Funding": {
+        "categories": ["startups"],
         "limit": 5
       },
       "Tech Community": {

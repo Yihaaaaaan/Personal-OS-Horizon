@@ -4,6 +4,7 @@ import json
 import os
 import re
 import shutil
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -157,3 +158,66 @@ class StorageManager:
         """Helper to save subscribers list."""
         subscribers_path = self.data_dir / "subscribers.json"
         _atomic_write_text(subscribers_path, json.dumps(subscribers, indent=2))
+
+    def load_sent_history(self) -> set:
+        """Load set of previously sent article URL keys from data/sent_history.json.
+
+        Returns set of normalized URL key strings. File format:
+        {"items": [{"url_key": "...", "title": "...", "date": "YYYY-MM-DD"}, ...]}
+        Entries older than 7 days are pruned on load.
+        """
+        history_path = self.data_dir / "sent_history.json"
+        if not history_path.exists():
+            return set()
+
+        try:
+            with open(history_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError):
+            return set()
+
+        items = data.get("items", [])
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+        pruned = [item for item in items if item.get("date", "") >= cutoff]
+
+        # Write back pruned list if entries were removed
+        if len(pruned) < len(items):
+            _atomic_write_text(
+                history_path,
+                json.dumps({"items": pruned}, indent=2, ensure_ascii=False) + "\n",
+            )
+
+        return {item["url_key"] for item in pruned}
+
+    def save_sent_history(self, items: list, existing_history: list | None = None):
+        """Append new items to sent_history.json. Each item needs url_key, title, date.
+
+        Prune entries older than 7 days.
+
+        Args:
+            items: List of dicts with url_key, title, date fields.
+            existing_history: Ignored (history is loaded fresh from disk).
+        """
+        history_path = self.data_dir / "sent_history.json"
+
+        # Load existing entries
+        existing: list = []
+        if history_path.exists():
+            try:
+                with open(history_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                existing = data.get("items", [])
+            except (json.JSONDecodeError, OSError):
+                existing = []
+
+        # Append new items
+        combined = existing + items
+
+        # Prune entries older than 7 days
+        cutoff = (datetime.now(timezone.utc) - timedelta(days=7)).strftime("%Y-%m-%d")
+        pruned = [item for item in combined if item.get("date", "") >= cutoff]
+
+        _atomic_write_text(
+            history_path,
+            json.dumps({"items": pruned}, indent=2, ensure_ascii=False) + "\n",
+        )
